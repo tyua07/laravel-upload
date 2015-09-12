@@ -71,4 +71,17 @@ class Upload
     {
         return $this->drive->getFileInfo($file_name);
     }
+
+    /**
+     * 获得文件信息
+     *
+     * @param $file_name
+     * @return mixed
+     * @author yangyifan <yangyifanphp@gmail.com>
+     */
+    public function listFiles($path = '')
+    {
+        return $this->drive->listFiles($path);
+    }
+
 }

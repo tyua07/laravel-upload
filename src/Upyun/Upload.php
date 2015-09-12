@@ -63,9 +63,9 @@ class Upload implements UploadInterface
      * @return array
      * @author yangyifan <yangyifanphp@gmail.com>
      */
-    public function listFiles()
+    public function listFiles($path)
     {
-        return $this->upload->listFiles();
+        return $this->upload->getList($path);
     }
 
     /**

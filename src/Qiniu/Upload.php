@@ -66,9 +66,9 @@ class Upload implements UploadInterface
      * @return array
      * @author yangyifan <yangyifanphp@gmail.com>
      */
-    public function listFiles($limit = 1000)
+    public function listFiles($path)
     {
-        return ( new BucketManager($this->auth) )->listFiles($this->bucket, $prefix = null, $marker = null, $limit, $delimiter = null);
+        return ( new BucketManager($this->auth) )->listFiles($this->bucket, $path, $marker = null, $limit = 10000, $delimiter = null);
     }
 
     /**
