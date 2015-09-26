@@ -161,7 +161,6 @@ class UpYun {
         //}
 
         if ($auto_mkdir === True) $opts['Mkdir'] = 'true';
-
         $this->_file_infos = $this->_do_request('PUT', $path, $opts, $file);
 
         return $this->_file_infos;
@@ -313,6 +312,7 @@ class UpYun {
 
         $response = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
 
         if ($http_code == 0) throw new UpYunException('Connection Failed', $http_code);
 

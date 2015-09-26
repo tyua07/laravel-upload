@@ -35,6 +35,7 @@ class Upload
      */
     public function write($file_name, $contents)
     {
+        $contents = fopen($contents->getPathname(), 'r');
         return $this->drive->write($file_name, $contents);
     }
 
