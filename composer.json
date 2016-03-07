@@ -1,9 +1,10 @@
 {
     "name": "yangyifan/upload",
     "description": "上传 SDK for Laravel",
-    "keywords": ["upload", "tyua07","laravel", "sdk"],
+    "keywords": ["upload", "tyua07","laravel", "sdk", "qiniu", "upyun", "oss"],
     "require": {
-        "qiniu/php-sdk": "v7.0.4"
+        "qiniu/php-sdk": "v7.0.4",
+        "aliyuncs/oss-sdk-php" : "*"
     },
     "autoload": {
         "psr-4": {
@@ -12,12 +13,6 @@
     },
 
     "license": "MIT",
-
-    "scripts": {
-        "post-install-cmd": [
-            "php artisan vendor:publish  --provider=Yangyifan\\Upload\\UploadServiceProvider"
-        ]
-    },
     "minimum-stability" : "dev",
     "authors": [
         {

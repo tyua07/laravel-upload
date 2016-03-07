@@ -185,6 +185,7 @@ class UpYun {
      * @return mixed
      */
     public function getList($path = '/') {/*{{{*/
+
         $rsp = $this->_do_request('GET', $path);
 
         $list = array();
@@ -227,6 +228,7 @@ class UpYun {
      * @return mixed
      */
     public function getFileInfo($path) {/*{{{*/
+        $path = '/' . $path;
         $rsp = $this->_do_request('HEAD', $path);
 
         return $rsp;
@@ -412,7 +414,7 @@ class UpYun {
      * @return void
      */
     public function rmDir($path) {/*{{{*/
-        $this->_do_request('DELETE', $path);
+        $this->_do_request('DELETE', '/'.$path);
     }/*}}}*/
 
     /**
@@ -424,7 +426,7 @@ class UpYun {
      * @return boolean
      */
     public function deleteFile($path) {/*{{{*/
-        $rsp = $this->_do_request('DELETE', $path);
+        $rsp = $this->_do_request('DELETE', '/'.$path);
     }/*}}}*/
 
     /**
