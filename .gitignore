@@ -1,2 +1,7 @@
 **/.idea/
 **/.DS_Store
+composer.lock
+/vendor
+/tests/qiniuConfig.php
+/tests/upyunConfig.php
+/tests/ossConfig.php

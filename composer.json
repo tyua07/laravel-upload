@@ -4,14 +4,14 @@
     "keywords": ["upload", "tyua07","laravel", "sdk", "qiniu", "upyun", "oss"],
     "require": {
         "qiniu/php-sdk": "v7.0.*",
-        "aliyuncs/oss-sdk-php" : "*"
+        "aliyuncs/oss-sdk-php" : "*",
+        "league/flysystem": "^1.0"
     },
     "autoload": {
         "psr-4": {
             "Yangyifan\\Upload\\": "src/"
         }
     },
-
     "license": "MIT",
     "minimum-stability" : "dev",
     "authors": [
@@ -19,5 +19,8 @@
             "name": "yangyifan",
             "email": "yangyifanphp@gmail.com"
         }
-    ]
+    ],
+    "require-dev": {
+        "phpunit/phpunit": "^5.7"
+    }
 }

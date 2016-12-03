@@ -41,7 +41,7 @@ class OssAdapter extends  AbstractAdapter
     /**
      * 构造方法
      *
-     * @param $config   配置信息
+     * @param array $config   配置信息
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function __construct($config)
@@ -77,6 +77,16 @@ class OssAdapter extends  AbstractAdapter
         }
 
         return $this->upload;
+    }
+
+    /**
+     * 获得 Oss 实例
+     *
+     * @return OssClient
+     */
+    public function getInstance()
+    {
+        return $this->getOss();
     }
 
     /**
@@ -184,14 +194,12 @@ class OssAdapter extends  AbstractAdapter
             //获得一个临时文件
             $tmpfname       = FileFunction::getTmpFile();
 
-            file_put_contents($tmpfname, $resource );
+            file_put_contents($tmpfname, $resource);
 
             $this->getOss()->uploadFile($this->bucket, $path, $tmpfname, $option = []);
 
             //删除临时文件
             FileFunction::deleteTmpFile($tmpfname);
-
-            fclose($resource);
 
             return true;
         }
@@ -479,7 +487,7 @@ class OssAdapter extends  AbstractAdapter
     public function createDir($dirname, Config $config)
     {
         try{
-            $this->getOss()->createObjectDir($this->bucket, $dirname);
+            $this->getOss()->createObjectDir($this->bucket, trim($dirname, '/'));
             return true;
         }catch (OssException $e){
 

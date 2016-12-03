@@ -42,7 +42,7 @@ class UpyunAdapter extends  AbstractAdapter
     /**
      * 构造方法
      *
-     * @param $config   配置信息
+     * @param array $config   配置信息
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function __construct($config)
@@ -74,7 +74,17 @@ class UpyunAdapter extends  AbstractAdapter
     }
 
     /**
-     * 重写组合upyun合肥路径
+     * 获得 Upyun 实例
+     *
+     * @return UpYun
+     */
+    public function getInstance()
+    {
+        return $this->getUpyun();
+    }
+
+    /**
+     * 重写组合upyun路径
      *
      * @param $path
      * @return string
@@ -152,7 +162,6 @@ class UpyunAdapter extends  AbstractAdapter
     public function writeStream($path, $resource, Config $config)
     {
         $status = $this->getUpyun()->writeFile($this->mergePath($path), $resource, true);
-        fclose($resource);
 
         return $status;
     }
@@ -213,7 +222,7 @@ class UpyunAdapter extends  AbstractAdapter
      * 获取资源的元信息，但不返回文件内容
      *
      * @param $path
-     * @return array
+     * @return mixed
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function getMetadata($path)

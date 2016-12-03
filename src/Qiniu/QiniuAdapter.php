@@ -118,33 +118,33 @@ class QiniuAdapter extends AbstractAdapter
     }
 
     /**
+     * 获得 Qiniu 实例
+     *
+     * @return UploadManager
+     */
+    public function getInstance()
+    {
+        return $this->getUploadManager();
+    }
+
+    /**
      * 获得二进制流上传对象
      *
-     * @param $key          上传文件名
-     * @param $inputStream  上传二进制流
-     * @param $config       配置信息
-     * @param $params       自定义变量
+     * @param string $key          上传文件名
+     * @param resource $inputStream  上传二进制流
+     * @param Config $config       配置信息
+     * @param array $params       自定义变量
      * @return ResumeUploader
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     protected function getResumeUpload($key, $inputStream, Config $config, $params = null)
     {
         if (!$this->resumeUploader) {
-            if (!$config->has('file_path')) {
-                throw new InvalidArgumentException("请配置 file_path 选项，此选项表示需要上传的文件的路径");
-            }
+            //获得文件的大小
+            $stat       = fstat($inputStream);
+            $file_size  = $stat[7];
 
-            $file_path = $config->get('file_path');
-
-            if ( $file_path ) {
-                $file_info = new \SplFileInfo($file_path);
-
-                if ($file_info->isFile() == true) {
-                    $this->resumeUploader = new ResumeUploader( $this->token, $key, $inputStream, $file_info->getSize(), $params, FileFunction::getFileMimeType($file_path), (new QiniuConfig()) );
-                }
-            }
-
-            throw new InvalidArgumentException("{$file_path} 不是一个文件");
+            $this->resumeUploader = new ResumeUploader( $this->token, $key, $inputStream, $file_size, $params, $config->get('mimetype'), (new QiniuConfig()) );
         }
         return $this->resumeUploader;
     }
@@ -190,11 +190,12 @@ class QiniuAdapter extends AbstractAdapter
      *
      * @param $file_name
      * @param $contents
+     * @param Config $config
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function write($path, $contents, Config $config)
     {
-        list(, $error) = $this->getUploadManager()->put($this->token, $path, $contents);
+        list(, $error) = $this->getUploadManager()->put($this->token, ltrim($path, '/'), $contents);
 
         if ($error) {
             return false;
@@ -211,6 +212,9 @@ class QiniuAdapter extends AbstractAdapter
      */
     public function writeStream($path, $resource, Config $config)
     {
+        if (!$config->has('mimetype')) {
+            throw new InvalidArgumentException('请设置mimetype！');
+        }
         list(, $error) = $this->getResumeUpload($path, $resource, $config)->upload();
 
         return $error ? false : true;
@@ -245,12 +249,12 @@ class QiniuAdapter extends AbstractAdapter
      *
      * @param string $directory
      * @param bool|false $recursive
-     * @return array
+     * @return mixed
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function listContents($directory = '', $recursive = false)
     {
-        list($file_list, $marker, $error) = $this->getBucketManager()->listFiles($this->bucket, $directory);
+        list($file_list, $marker, $error) = $this->getBucketManager()->listFiles($this->bucket, $directory == '/' ? '' : $directory);
 
         if (!$error) {
             foreach ($file_list as &$file) {
@@ -266,12 +270,12 @@ class QiniuAdapter extends AbstractAdapter
      * 获取资源的元信息，但不返回文件内容
      *
      * @param $path
-     * @return array
+     * @return mixed
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function getMetadata($path)
     {
-        list($info, $error) = $this->getBucketManager()->stat($this->bucket, $path);
+        list($info, $error) = $this->getBucketManager()->stat($this->bucket, ltrim($path, '/'));
 
         if ($error) {
             return false;
@@ -309,13 +313,13 @@ class QiniuAdapter extends AbstractAdapter
      * 获得文件最后修改时间
      *
      * @param string $path
-     * @return int 时间戳
+     * @return mixed 时间戳
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function getTimestamp($path)
     {
         list(, , , $timestamp) = array_values($this->getMetadata($path));
-        return !empty($timestamp) ? ['timestamp' => $timestamp ] : false;
+        return !empty($timestamp) ? ['timestamp' => substr($timestamp, 0, -7) ] : false;
     }
 
     /**
@@ -363,7 +367,7 @@ class QiniuAdapter extends AbstractAdapter
      */
     public function delete($path)
     {
-        return $this->getBucketManager()->delete($this->bucket, $path);
+        return $this->getBucketManager()->delete($this->bucket, $path) == null ? true : false;
     }
 
     /**
@@ -375,7 +379,7 @@ class QiniuAdapter extends AbstractAdapter
      */
     public function deleteDir($path)
     {
-        list($file_list, , $error) = $this->getBucketManager()->listFiles($this->bucket, $path);
+        list($file_list, , $error) = $this->getBucketManager()->listFiles($this->bucket, $path == '/' ? '' : $path);
 
         if (!$error) {
             foreach ( $file_list as $file) {
