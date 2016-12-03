@@ -1,6 +1,6 @@
 ##### 安装
 
-* composer require "yangyifan/upload:v0.1" 。
+* ``` composer require "yangyifan/upload:v0.1"``` 。
 * 添加 ``` \Yangyifan\Upload\UploadServiceProvider ``` 到您项目 ```config/app.php``` 中的 ```providers``` 部分: ```Yangyifan\Upload\UploadServiceProvider```。
 * 支持七牛，upyun，oss。
 * 完成按照官方 ``` Storage  ``` 来扩展。所以不需要修改代码，只需要新增配置文件信息，就可以替换任何一种存储引擎。
