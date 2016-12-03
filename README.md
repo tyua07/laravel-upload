@@ -1,7 +1,7 @@
 ##### 安装
 
-* composer require "yangyifan/upload:dev-master" 。
-* 添加 UploadServiceProvider 到您项目 config/app.php 中的 providers 部分: Yangyifan\Upload\UploadServiceProvider。
+* composer require "yangyifan/upload:v0.1" 。
+* 添加 ``` \Yangyifan\Upload\UploadServiceProvider ``` 到您项目 ```config/app.php``` 中的 ```providers``` 部分: ```Yangyifan\Upload\UploadServiceProvider```。
 * 支持七牛，upyun，oss。
 * 完成按照官方 ``` Storage  ``` 来扩展。所以不需要修改代码，只需要新增配置文件信息，就可以替换任何一种存储引擎。
 
@@ -44,52 +44,56 @@ use Storage;
 
 ```
 
+>注意：详细使用，可以参考单元测试里面的代码。
 
 ###### 配置信息
+
+>注意：请在 ```config\filesystems.php``` 中的 ```disks``` 数组下面加入以下配置。
 
 ```
 
 'qiniu' => [
-            'driver'        => 'qiniu',
-            'domain'        => '',//你的七牛域名
-            'access_key'    => '',//AccessKey
-            'secret_key'    => '',//SecretKey
-            'bucket'        => '',//Bucket名字
-            'transport'     => 'http',//如果支持https，请填写https，如果不支持请填写http
-        ],
+    'driver'        => 'qiniu',
+    'domain'        => '',//你的七牛域名
+    'access_key'    => '',//AccessKey
+    'secret_key'    => '',//SecretKey
+    'bucket'        => '',//Bucket名字
+    'transport'     => 'http',//如果支持https，请填写https，如果不支持请填写http
+],
 
-        'upyun' => [
-            'driver'        => 'upyun',
-            'domain'        => '',//你的upyun域名
-            'username'      => '',//UserName
-            'password'      => '',//Password
-            'bucket'        => '',//Bucket名字
-            'timeout'       => 130,//超时时间
-            'endpoint'      => null,//线路
-            'transport'     => 'http',//如果支持https，请填写https，如果不支持请填写http
-        ],
+'upyun' => [
+    'driver'        => 'upyun',
+    'domain'        => '',//你的upyun域名
+    'username'      => '',//UserName
+    'password'      => '',//Password
+    'bucket'        => '',//Bucket名字
+    'timeout'       => 130,//超时时间
+    'endpoint'      => null,//线路
+    'transport'     => 'http',//如果支持https，请填写https，如果不支持请填写http
+],
 
-		'oss'	=> [
-			'driver'			=> 'oss',
-			'accessKeyId'		=> '',
-			'accessKeySecret' 	=> '',
-			'endpoint'			=> '',
-			'isCName'			=> false,
-			'securityToken'		=> null,
-            'bucket'            => '',
-            'timeout'           => '5184000',
-            'connectTimeout'    => '10',
-			'transport'     	=> 'http',//如果支持https，请填写https，如果不支持请填写http
-            'max_keys'          => 1000,//max-keys用于限定此次返回object的最大数，如果不设定，默认为100，max-keys取值不能大于1000
-		],
-	],
-
+'oss'	=> [
+    'driver'			=> 'oss',
+    'accessKeyId'		=> '',
+    'accessKeySecret' 	=> '',
+    'endpoint'			=> '',
+    'isCName'			=> false,
+    'securityToken'		=> null,
+    'bucket'            => '',
+    'timeout'           => '5184000',
+    'connectTimeout'    => '10',
+    'transport'     	=> 'http',//如果支持https，请填写https，如果不支持请填写http
+    'max_keys'          => 1000,//max-keys用于限定此次返回object的最大数，如果不设定，默认为100，max-keys取值不能大于1000
+],
 ```
 
 ###### 其他
 
 * 如果需要支持其他的上传引擎，请联系我，如果我有空，我会去扩展，希望这个能帮助大家开发，谢谢，有问题pr我，或者邮件联系我，我的邮箱是：yangyifanphp@gmail.com。
-* 下一步计划将完成单元测试。
+
+###### 更新
+
+* 新增单元测试
 
 ###### 协议
 
