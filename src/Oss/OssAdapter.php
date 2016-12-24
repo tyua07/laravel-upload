@@ -508,4 +508,22 @@ class OssAdapter extends  AbstractAdapter
         return true;
     }
 
+    /**
+     * 获取当前文件的URL访问路径
+     * @param  string $file 文件名
+     * @param  integer $expire_at 有效期，单位：秒
+     * @return string       
+     * @author qsnh <616896861@qq.com>
+     */
+    public function getUrl($file, $expire_at = 3600)
+    {
+        try {
+            $accessUrl = $this->getOss()->signUrl($this->bucket, $file, $expire_at);
+        } catch (OssException $e) {
+            return false;
+        }
+
+        return $accessUrl;
+    }
+
 }
