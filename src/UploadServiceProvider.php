@@ -7,6 +7,7 @@ use League\Flysystem\Filesystem;
 use Yangyifan\Upload\Qiniu\QiniuAdapter;
 use Yangyifan\Upload\Oss\OssAdapter;
 use Yangyifan\Upload\Upyun\UpyunAdapter;
+use Yangyifan\Upload\Cos\CosAdapter;
 
 class UploadServiceProvider extends ServiceProvider
 {
@@ -17,14 +18,17 @@ class UploadServiceProvider extends ServiceProvider
 	 */
 	public function boot()
 	{
-        //实现七牛文件系统
+        // 实现七牛文件系统
         $this->extendQiniuStorage();
 
-        //实现upyun文件系统
+        // 实现 upyun 文件系统
         $this->extendUpyunStorage();
 
-		//实现oss文件系统
+		// 实现 oss 文件系统
 		$this->extendOssStorage();
+
+        // 实现 oss 文件系统
+        $this->extendCosStorage();
 	}
 
 	/**
@@ -54,7 +58,7 @@ class UploadServiceProvider extends ServiceProvider
     }
 
     /**
-     * 实现upyun文件系统
+     * 实现 upyun 文件系统
      *
      * @author yangyifan <yangyifanphp@gmail.com>
      */
@@ -66,7 +70,7 @@ class UploadServiceProvider extends ServiceProvider
     }
 
 	/**
-	 * 实现oss文件系统
+	 * 实现 Oss 文件系统
 	 *
 	 * @author yangyifan <yangyifanphp@gmail.com>
 	 */
@@ -76,5 +80,17 @@ class UploadServiceProvider extends ServiceProvider
 			return new Filesystem(new OssAdapter($config), $config);
 		});
 	}
+
+    /**
+     * 实现 Cos 文件系统
+     *
+     * @author yangyifan <yangyifanphp@gmail.com>
+     */
+    protected function extendCosStorage()
+    {
+        \Storage::extend('cos', function($app, $config){
+            return new Filesystem(new CosAdapter($config), $config);
+        });
+    }
 
 }

@@ -12,6 +12,7 @@ namespace Yangyifan\Upload\Upyun;
 
 use League\Flysystem\Adapter\AbstractAdapter;
 use League\Flysystem\Config;
+use Yangyifan\Library\PathLibrary;
 use Yangyifan\Upload\Functions\FileFunction;
 use Exception;
 
@@ -84,15 +85,14 @@ class UpyunAdapter extends  AbstractAdapter
     }
 
     /**
-     * 重写组合upyun路径
+     * 格式化路径
      *
      * @param $path
      * @return string
-     * @author yangyifan <yangyifanphp@gmail.com>
      */
-    protected function mergePath($path)
+    protected static function normalizerPath($path, $is_dir = false)
     {
-        return '/' . trim($path, '/');
+        return PathLibrary::normalizerPath($path, $is_dir);
     }
 
     /**
@@ -149,7 +149,7 @@ class UpyunAdapter extends  AbstractAdapter
      */
     public function write($path, $contents, Config $config)
     {
-        return $this->getUpyun()->writeFile($this->mergePath($path), $contents, $auto_mkdir = true);
+        return $this->getUpyun()->writeFile(static::normalizerPath($path), $contents, $auto_mkdir = true);
     }
 
     /**
@@ -161,7 +161,7 @@ class UpyunAdapter extends  AbstractAdapter
      */
     public function writeStream($path, $resource, Config $config)
     {
-        $status = $this->getUpyun()->writeFile($this->mergePath($path), $resource, true);
+        $status = $this->getUpyun()->writeFile(static::normalizerPath($path), $resource, true);
 
         return $status;
     }
@@ -202,13 +202,13 @@ class UpyunAdapter extends  AbstractAdapter
     {
         try{
             //组合目录
-            $directory  = $this->mergePath($directory);
+            $directory  = static::normalizerPath($directory);
 
             $file_list = $this->getUpyun()->getList($directory);
 
             if (is_array($file_list) && count($file_list) > 0 ) {
                 foreach ($file_list as &$file) {
-                    $file['path']   = ltrim($directory, '/') . DIRECTORY_SEPARATOR . $file['name'];
+                    $file['path']   = static::normalizerPath($directory) . DIRECTORY_SEPARATOR . $file['name'];
                 }
             }
             return $file_list;
@@ -243,20 +243,20 @@ class UpyunAdapter extends  AbstractAdapter
      * 获得文件大小
      *
      * @param string $path
-     * @return int
+     * @return array
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function getSize($path)
     {
         $file_info = $this->getMetadata($path);
-        return $file_info != false && $file_info['x-upyun-file-size'] > 0 ? [ 'size' => $file_info['x-upyun-file-size'] ] : false;
+        return $file_info != false && $file_info['x-upyun-file-size'] > 0 ? [ 'size' => $file_info['x-upyun-file-size'] ] : ['size' => 0];
     }
 
     /**
      * 获得文件Mime类型
      *
      * @param string $path
-     * @return mixed string|null
+     * @return array
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function getMimetype($path)
@@ -279,13 +279,15 @@ class UpyunAdapter extends  AbstractAdapter
      * 获得文件最后修改时间
      *
      * @param string $path
-     * @return int 时间戳
+     * @return array 时间戳
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function getTimestamp($path)
     {
         $file_info = $this->getMetadata($path);
-        return $file_info != false && !empty($file_info['x-upyun-file-date']) ? ['timestamp' => $file_info['x-upyun-file-date'] ] : false;
+        return $file_info != false && !empty($file_info['x-upyun-file-date'])
+            ? ['timestamp' => $file_info['x-upyun-file-date'] ]
+            : ['timestamp' => 0];
     }
 
     /**
@@ -309,7 +311,7 @@ class UpyunAdapter extends  AbstractAdapter
      */
     public function rename($path, $newpath)
     {
-        $newpath = $this->mergePath($newpath);
+        $newpath = static::normalizerPath($newpath);
 
         $this->writeStream($newpath, $this->readStream($path)['stream'], new Config() );
 
@@ -328,7 +330,7 @@ class UpyunAdapter extends  AbstractAdapter
      */
     public function copy($path, $newpath)
     {
-        $this->writeStream($this->mergePath($newpath), $this->readStream($this->mergePath($path))['stream'], new Config() );
+        $this->writeStream(static::normalizerPath($newpath), $this->readStream(static::normalizerPath($path))['stream'], new Config() );
 
         return true;
     }
@@ -341,7 +343,7 @@ class UpyunAdapter extends  AbstractAdapter
      */
     public function delete($path)
     {
-        return $this->getUpyun()->delete($this->mergePath($path));
+        return $this->getUpyun()->delete(static::normalizerPath($path));
     }
 
     /**
@@ -369,8 +371,8 @@ class UpyunAdapter extends  AbstractAdapter
      */
     protected function recursiveDeleteDir($path)
     {
-        $path = $this->mergePath($path);
-        $file_list = $this->listContents($path);
+        $path       = static::normalizerPath($path);
+        $file_list  = $this->listContents($path);
 
         if ( is_array($file_list) && count($file_list) > 0 ) {
             foreach ($file_list as $file) {
@@ -394,7 +396,7 @@ class UpyunAdapter extends  AbstractAdapter
      */
     public function createDir($dirname, Config $config)
     {
-        $this->getUpyun()->makeDir($this->mergePath($dirname));
+        $this->getUpyun()->makeDir(static::normalizerPath($dirname, true));
         return true;
     }
 
@@ -409,6 +411,18 @@ class UpyunAdapter extends  AbstractAdapter
     public function setVisibility($path, $visibility)
     {
         return true;
+    }
+
+    /**
+     * 获取当前文件的URL访问路径
+     *
+     * @param $file
+     * @param int $expire_at
+     * @return mixed
+     */
+    public function getUrl($file, $expire_at = 3600)
+    {
+        return $this->applyPathPrefix($file);
     }
 
 }

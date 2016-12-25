@@ -3,20 +3,20 @@
 // +----------------------------------------------------------------------
 // | date: 2016-11-13
 // +----------------------------------------------------------------------
-// | UpyunTest.php: 测试又拍云
+// | CosTest.php: 测试 Cos
 // +----------------------------------------------------------------------
 // | Author: yangyifan <yangyifanphp@gmail.com>
 // +----------------------------------------------------------------------
 
 use PHPUnit\Framework\TestCase;
-use Yangyifan\Upload\Upyun\UpyunAdapter;
+use Yangyifan\Upload\Cos\CosAdapter;
 
-class UpyunTest extends TestCase
+class CosTest extends TestCase
 {
     /**
      * 上传引擎
      *
-     * @var \Yangyifan\Upload\Upyun\UpyunAdapter
+     * @var CosAdapter
      */
     protected static $drive;
 
@@ -29,9 +29,9 @@ class UpyunTest extends TestCase
 
     public static function setUpBeforeClass()
     {
-        $upyunConfig    = array_merge(config(require base_path('/config.php'), 'upyun'), require_once base_path('/upyunConfig.php'));
-        static::$drive  = new UpyunAdapter($upyunConfig);
-        static::$config = new \League\Flysystem\Config($upyunConfig);
+        $cosConfig      = array_merge(config(require base_path('/config.php'), 'cos'), require_once base_path('/cosConfig.php'));
+        static::$drive  = new CosAdapter($cosConfig);
+        static::$config = new \League\Flysystem\Config($cosConfig);
 
         //上传资源
         if ( !static::$drive->has('demo.txt') ) {
@@ -41,9 +41,9 @@ class UpyunTest extends TestCase
         if ( !static::$drive->has('demo.jpg') ) {
             static::$drive->write('demo.jpg', file_get_contents(base_path('/demo.jpg')), static::$config);
         }
-
-        //不知道为什么 upyun 上传的文件不能马上获取
-        sleep(10);
+        if ( !static::$drive->has('demo.zip') ) {
+            //static::$drive->write('demo.zip', file_get_contents(base_path('/demo.zip')), static::$config);
+        }
     }
 
     public static function tearDownAfterClass()
@@ -52,7 +52,7 @@ class UpyunTest extends TestCase
         self::$drive = NULL;
     }
 
-    //测试 Debug
+    // 测试 Debug
     public function testgetMetadata()
     {
         return static::$drive->getMetadata('demo.txt');
@@ -66,13 +66,12 @@ class UpyunTest extends TestCase
 
     public function testListContents()
     {
-        $this->assertNotEmpty(static::$drive->listContents('/'));
+        $this->assertNotEmpty(static::$drive->listContents(''));
     }
 
     public function testGetSizes()
     {
         $size = static::$drive->getSize('demo.txt')['size'];
-
         $this->assertEquals($size, 4);
     }
 
@@ -90,8 +89,8 @@ class UpyunTest extends TestCase
         $timestamp1 = static::$drive->getTimestamp('demo.txt')['timestamp'];
         $timestamp2 = static::$drive->getTimestamp('demo.jpg')['timestamp'];
 
-//        $this->assertEquals($timestamp1, '1480663159');
-//        $this->assertEquals($timestamp2, '1480663159');
+        //$this->assertEquals($timestamp1, '1482638242');
+        //$this->assertEquals($timestamp2, '1482638241');
     }
 
     public function testRead()
@@ -113,9 +112,7 @@ class UpyunTest extends TestCase
 
     public function testWrite()
     {
-        if (!static::$drive->has('demo.txt') ) {
-            $this->assertTrue(static::$drive->write('demo.txt', '<?php echo 11;?>', static::$config));
-        }
+        $this->assertTrue(static::$drive->write('demo.php', '121', static::$config));
     }
 
     public function testWriteStream()
@@ -123,24 +120,23 @@ class UpyunTest extends TestCase
         $file   = base_path('/demo.html');
         $config = static::$config;
         $handle = fopen($file, 'r');
-        $config->set('mimetype', \Yangyifan\Upload\Functions\FileFunction::getFileMimeType($file));
         $this->assertTrue(static::$drive->writeStream('demo.html', $handle, $config));
         fclose($handle);
     }
 
     public function testRename()
     {
-        if (static::$drive->has('demo.php') && !static::$drive->has('demoClass.php')) {
-            $this->assertTrue(static::$drive->rename('demo.php', 'demoClass.php'));
+        if (static::$drive->has('/demo.php') && !static::$drive->has('/demoClass.php')) {
+            $this->assertTrue(static::$drive->rename('/demo.php', '/demoClass.php'));
         }
 
     }
 
     public function testCopy()
     {
-        if (!static::$drive->has('app/demoClass1.php') && !static::$drive->has('app/demoClass2.php') && static::$drive->has('demoClass.php')) {
-            $this->assertTrue(static::$drive->copy('demoClass.php', 'app/demo1Class.php'));
-            $this->assertTrue(static::$drive->copy('demoClass.php', 'app/demo2Class.php'));
+        if (!static::$drive->has('/app/demoClass1.php') && !static::$drive->has('/app/demoClass2.php') && static::$drive->has('/demoClass.php')) {
+            $this->assertTrue(static::$drive->copy('/demoClass.php', 'app/demo1Class.php'));
+            $this->assertTrue(static::$drive->copy('/demoClass.php', 'app/demo2Class.php'));
         }
     }
 
@@ -149,19 +145,23 @@ class UpyunTest extends TestCase
         if (static::$drive->has('app/demoClass1.php')) {
             $this->assertTrue(static::$drive->delete('app/demoClass1.php'));
         }
-    }
 
-    public function testcreateDir()
-    {
-        $this->assertTrue(static::$drive->createDir('/test/', static::$config), true);
-        $this->assertTrue(static::$drive->createDir('/test1/', static::$config), true);
+        if (static::$drive->has('demoClass.php')) {
+            $this->assertTrue(static::$drive->delete('demoClass.php'));
+        }
     }
 
     public function testDeleteDir()
     {
-        if (static::$drive->has('test1')) {
-            $this->assertTrue(static::$drive->deleteDir('/test1'));
-        }
+        $this->assertTrue(static::$drive->deleteDir('app'));
+    }
+
+
+    public function testcreateDir()
+    {
+        $this->assertTrue(static::$drive->createDir('/test/123/456/789', static::$config));
+        $this->assertTrue(static::$drive->createDir('/test/abc/efg/hij', static::$config));
+        $this->assertTrue(static::$drive->deleteDir('/test'));
     }
 
     /**
@@ -181,5 +181,17 @@ class UpyunTest extends TestCase
     public function testGetUrl()
     {
         (static::$drive->getUrl('demo.txt'));
+    }
+
+    /**
+     * 删除全部文件
+     *
+     */
+    public function testDeleteAll()
+    {
+        $this->assertTrue(static::$drive->delete('demo.txt'));
+        $this->assertTrue(static::$drive->delete('demo.jpg'));
+        $this->assertTrue(static::$drive->delete('demo.html'));
+
     }
 }

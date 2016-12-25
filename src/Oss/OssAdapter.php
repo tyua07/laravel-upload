@@ -13,6 +13,7 @@ namespace Yangyifan\Upload\Oss;
 
 use League\Flysystem\Adapter\AbstractAdapter;
 use League\Flysystem\Config;
+use Yangyifan\Library\PathLibrary;
 use Yangyifan\Upload\Functions\FileFunction;
 use Exception;
 use OSS\OssClient;
@@ -39,6 +40,13 @@ class OssAdapter extends  AbstractAdapter
     protected $upload;
 
     /**
+     * bucket
+     *
+     * @var string
+     */
+    protected $bucket;
+
+    /**
      * 构造方法
      *
      * @param array $config   配置信息
@@ -50,6 +58,19 @@ class OssAdapter extends  AbstractAdapter
         $this->bucket   = $this->config['bucket'];
         //设置路径前缀
         $this->setPathPrefix($this->config['transport'] . '://' . $this->config['bucket'] . '.' .  $this->config['endpoint']);
+    }
+
+    /**
+     * 格式化路径
+     *
+     * @param $path
+     * @return string
+     */
+    protected static function normalizerPath($path, $is_dir = false)
+    {
+        $path = ltrim(PathLibrary::normalizerPath($path, $is_dir), '/');
+
+        return $path == '/' ? '' : $path;
     }
 
     /**
@@ -90,18 +111,6 @@ class OssAdapter extends  AbstractAdapter
     }
 
     /**
-     * 组合路径
-     *
-     * @param $path
-     * @return string
-     * @author yangyifan <yangyifanphp@gmail.com>
-     */
-    protected function mergePath($path)
-    {
-        return trim($path, '/') . '/';
-    }
-
-    /**
      * 判断文件是否存在
      *
      * @param string $path
@@ -127,7 +136,7 @@ class OssAdapter extends  AbstractAdapter
     public function read($path)
     {
         try {
-            return ['contents' => $this->getOss()->getObject($this->bucket, $path) ];
+            return ['contents' => $this->getOss()->getObject($this->bucket, static::normalizerPath($path)) ];
         }catch (OssException $e){
 
         }
@@ -139,7 +148,7 @@ class OssAdapter extends  AbstractAdapter
      * 获得文件流
      *
      * @param string $path
-     * @return array
+     * @return array|bool
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function readStream($path)
@@ -159,6 +168,7 @@ class OssAdapter extends  AbstractAdapter
         }catch (OssException $e){
 
         }
+
         return false;
     }
 
@@ -244,7 +254,7 @@ class OssAdapter extends  AbstractAdapter
     public function listContents($directory = '', $recursive = false)
     {
         try{
-            $directory = $directory == '' || $directory == '/' ? '' : $this->mergePath($directory);
+            $directory = static::normalizerPath($directory, true);
 
             $options = [
                 'delimiter' => '/' ,
@@ -304,7 +314,7 @@ class OssAdapter extends  AbstractAdapter
      * 获取资源的元信息，但不返回文件内容
      *
      * @param $path
-     * @return array
+     * @return array|bool
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function getMetadata($path)
@@ -324,13 +334,13 @@ class OssAdapter extends  AbstractAdapter
      * 获得文件大小
      *
      * @param string $path
-     * @return int
+     * @return array
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function getSize($path)
     {
         $file_info = $this->getMetadata($path);
-        return $file_info != false && $file_info['content-length'] > 0 ? [ 'size' => $file_info['content-length'] ] : false;
+        return $file_info != false && $file_info['content-length'] > 0 ? [ 'size' => $file_info['content-length'] ] : ['size' => 0];
     }
 
     /**
@@ -350,13 +360,15 @@ class OssAdapter extends  AbstractAdapter
      * 获得文件最后修改时间
      *
      * @param string $path
-     * @return int 时间戳
+     * @return array 时间戳
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function getTimestamp($path)
     {
         $file_info = $this->getMetadata($path);
-        return $file_info != false && !empty($file_info['last-modified']) ? ['timestamp' => strtotime($file_info['last-modified']) ] : false;
+        return $file_info != false && !empty($file_info['last-modified'])
+            ? ['timestamp' => strtotime($file_info['last-modified']) ]
+            : ['timestamp' => 0 ];
     }
 
     /**
@@ -385,9 +397,9 @@ class OssAdapter extends  AbstractAdapter
              * 如果是一个资源，请保持最后不是以“/”结尾！
              *
              */
-            $path = rtrim($this->mergePath($path), '/');
+            $path = static::normalizerPath($path);
 
-            $this->getOss()->copyObject($this->bucket, $path, $this->bucket, rtrim($this->mergePath($newpath), '/'), []);
+            $this->getOss()->copyObject($this->bucket, $path, $this->bucket, static::normalizerPath($newpath), []);
             $this->delete($path);
             return true;
         }catch (OssException $e){
@@ -407,7 +419,7 @@ class OssAdapter extends  AbstractAdapter
     public function copy($path, $newpath)
     {
         try {
-            $this->getOss()->copyObject($this->bucket, $path, $this->bucket, $newpath, []);
+            $this->getOss()->copyObject($this->bucket, $path, $this->bucket, static::normalizerPath($newpath), []);
             return true;
         }catch (OssException $e){
 
@@ -460,8 +472,9 @@ class OssAdapter extends  AbstractAdapter
      */
     protected function recursiveDelete($path)
     {
-        $file_list = $this->listContents(rtrim($path, '/'));
-        //如果当前文件夹文件不为空,则直接去删除文件夹
+        $file_list = $this->listContents($path);
+
+        // 如果当前文件夹文件不为空,则直接去删除文件夹
         if ( is_array($file_list) && count($file_list) > 0 ) {
             foreach ($file_list as $file) {
                 if ($file['path'] == $path) {
@@ -474,6 +487,7 @@ class OssAdapter extends  AbstractAdapter
                 }
             }
         }
+
         $this->getOss()->deleteObject($this->bucket, $path);
     }
 
@@ -487,7 +501,7 @@ class OssAdapter extends  AbstractAdapter
     public function createDir($dirname, Config $config)
     {
         try{
-            $this->getOss()->createObjectDir($this->bucket, trim($dirname, '/'));
+            $this->getOss()->createObjectDir($this->bucket, static::normalizerPath($dirname, true));
             return true;
         }catch (OssException $e){
 
