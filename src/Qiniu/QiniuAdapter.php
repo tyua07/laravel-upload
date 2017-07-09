@@ -19,7 +19,9 @@ use Qiniu\Storage\BucketManager;
 use Qiniu\Config AS QiniuConfig;
 use Symfony\Component\Finder\SplFileInfo;
 use InvalidArgumentException;
+use Yangyifan\Library\PathLibrary;
 use Yangyifan\Upload\Functions\FileFunction;
+use League\Flysystem\Util\MimeType;
 
 class QiniuAdapter extends AbstractAdapter
 {
@@ -59,13 +61,6 @@ class QiniuAdapter extends AbstractAdapter
     protected $uploadManager;
 
     /**
-     * 二进制流上传对象
-     *
-     * @var
-     */
-    protected $resumeUploader;
-
-    /**
      * 配置信息
      *
      * @var array
@@ -88,6 +83,20 @@ class QiniuAdapter extends AbstractAdapter
         //设置路径前缀
         $this->setPathPrefix($this->config['transport'] . '://' . $this->config['domain']);
     }
+
+    /**
+     * 格式化路径
+     *
+     * @param $path
+     * @return string
+     */
+    protected static function normalizerPath($path)
+    {
+        $path = ltrim(PathLibrary::normalizerPath($path), '/');
+
+        return $path == '/' ? '' : $path;
+    }
+
 
     /**
      * 获得七牛空间管理对象
@@ -139,14 +148,29 @@ class QiniuAdapter extends AbstractAdapter
      */
     protected function getResumeUpload($key, $inputStream, Config $config, $params = null)
     {
-        if (!$this->resumeUploader) {
-            //获得文件的大小
-            $stat       = fstat($inputStream);
-            $file_size  = $stat[7];
+        return new ResumeUploader( $this->token, $key, $inputStream, $this->getResourceSize($inputStream), $params, $config->get('mimetype'), (new QiniuConfig()) );
+    }
 
-            $this->resumeUploader = new ResumeUploader( $this->token, $key, $inputStream, $file_size, $params, $config->get('mimetype'), (new QiniuConfig()) );
+    /**
+     * 获得文件大小
+     *
+     * @param $inputStream
+     * @return int
+     */
+    protected function getResourceSize($inputStream)
+    {
+        $size = 0;
+
+        $a = &$inputStream;
+
+        while( !feof($a) ) {
+            $str = fgets($a);
+            $size += strlen($str);
         }
-        return $this->resumeUploader;
+
+        fseek($inputStream, 0);
+
+        return $size;
     }
 
     /**
@@ -195,7 +219,7 @@ class QiniuAdapter extends AbstractAdapter
      */
     public function write($path, $contents, Config $config)
     {
-        list(, $error) = $this->getUploadManager()->put($this->token, ltrim($path, '/'), $contents);
+        list(, $error) = $this->getUploadManager()->put($this->token, static::normalizerPath($path), $contents);
 
         if ($error) {
             return false;
@@ -212,10 +236,9 @@ class QiniuAdapter extends AbstractAdapter
      */
     public function writeStream($path, $resource, Config $config)
     {
-        if (!$config->has('mimetype')) {
-            throw new InvalidArgumentException('请设置mimetype！');
-        }
-        list(, $error) = $this->getResumeUpload($path, $resource, $config)->upload();
+        $config->set('mimetype', MimeType::detectByContent(fgets($resource)));
+
+        list(, $error) = $this->getResumeUpload(static::normalizerPath($path), $resource, $config)->upload();
 
         return $error ? false : true;
     }
@@ -254,7 +277,7 @@ class QiniuAdapter extends AbstractAdapter
      */
     public function listContents($directory = '', $recursive = false)
     {
-        list($file_list, $marker, $error) = $this->getBucketManager()->listFiles($this->bucket, $directory == '/' ? '' : $directory);
+        list($file_list, $marker, $error) = $this->getBucketManager()->listFiles($this->bucket, static::normalizerPath($directory));
 
         if (!$error) {
             foreach ($file_list as &$file) {
@@ -275,7 +298,7 @@ class QiniuAdapter extends AbstractAdapter
      */
     public function getMetadata($path)
     {
-        list($info, $error) = $this->getBucketManager()->stat($this->bucket, ltrim($path, '/'));
+        list($info, $error) = $this->getBucketManager()->stat($this->bucket, static::normalizerPath($path));
 
         if ($error) {
             return false;
@@ -287,13 +310,13 @@ class QiniuAdapter extends AbstractAdapter
      * 获得文件大小
      *
      * @param string $path
-     * @return int
+     * @return array
      * @author yangyifan <yangyifanphp@gmail.com>
      */
     public function getSize($path)
     {
         list($fsize, , , ) = array_values($this->getMetadata($path));
-        return $fsize > 0 ? [ 'size' => $fsize ] : false;
+        return $fsize > 0 ? [ 'size' => $fsize ] : ['size' => 0];
     }
 
     /**
@@ -306,7 +329,7 @@ class QiniuAdapter extends AbstractAdapter
     public function getMimetype($path)
     {
         list(, , $mimeType,) = array_values($this->getMetadata($path));
-        return !empty($mimeType) ? ['mimetype' => $mimeType ] : false;
+        return !empty($mimeType) ? ['mimetype' => $mimeType ] : ['mimetype' => ''];
     }
 
     /**
@@ -319,7 +342,7 @@ class QiniuAdapter extends AbstractAdapter
     public function getTimestamp($path)
     {
         list(, , , $timestamp) = array_values($this->getMetadata($path));
-        return !empty($timestamp) ? ['timestamp' => substr($timestamp, 0, -7) ] : false;
+        return !empty($timestamp) ? ['timestamp' => substr($timestamp, 0, -7) ] : ['timestamp' => 0];
     }
 
     /**
@@ -343,7 +366,9 @@ class QiniuAdapter extends AbstractAdapter
      */
     public function rename($path, $newpath)
     {
-        return $this->getBucketManager()->rename($this->bucket, $path, $newpath) == null ? true : false;
+        return $this->getBucketManager()->rename($this->bucket, static::normalizerPath($path), static::normalizerPath($newpath)) == null
+            ? true
+            : false;
     }
 
     /**
@@ -356,7 +381,9 @@ class QiniuAdapter extends AbstractAdapter
      */
     public function copy($path, $newpath)
     {
-        return $this->getBucketManager()->copy($this->bucket, $path, $this->bucket, $newpath) == null ? true : false;
+        return $this->getBucketManager()->copy($this->bucket, static::normalizerPath($path), $this->bucket, static::normalizerPath($newpath)) == null
+            ? true
+            : false;
     }
 
     /**
@@ -367,7 +394,7 @@ class QiniuAdapter extends AbstractAdapter
      */
     public function delete($path)
     {
-        return $this->getBucketManager()->delete($this->bucket, $path) == null ? true : false;
+        return $this->getBucketManager()->delete($this->bucket, static::normalizerPath($path)) == null ? true : false;
     }
 
     /**
@@ -379,7 +406,7 @@ class QiniuAdapter extends AbstractAdapter
      */
     public function deleteDir($path)
     {
-        list($file_list, , $error) = $this->getBucketManager()->listFiles($this->bucket, $path == '/' ? '' : $path);
+        list($file_list, , $error) = $this->getBucketManager()->listFiles($this->bucket, static::normalizerPath($path));
 
         if (!$error) {
             foreach ( $file_list as $file) {
@@ -412,5 +439,17 @@ class QiniuAdapter extends AbstractAdapter
     public function setVisibility($path, $visibility)
     {
         return true;
+    }
+
+    /**
+     * 获取当前文件的URL访问路径
+     *
+     * @param $file
+     * @param int $expire_at
+     * @return mixed
+     */
+    public function getUrl($file, $expire_at = 3600)
+    {
+        return $this->applyPathPrefix($file);
     }
 }

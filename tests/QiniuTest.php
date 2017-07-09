@@ -118,8 +118,7 @@ class QiniuTest extends TestCase
         $file   = base_path('/demo.html');
         $config = static::$config;
         $handle = fopen($file, 'r');
-        $config->set('mimetype', \Yangyifan\Upload\Functions\FileFunction::getFileMimeType($file));
-        $this->assertTrue(static::$drive->writeStream('demo.html', $handle, $config));
+        $this->assertTrue(static::$drive->writeStream('/demo.html', $handle, $config));
         fclose($handle);
     }
 
@@ -165,5 +164,14 @@ class QiniuTest extends TestCase
     {
         static::$drive->getInstance();
 
+    }
+
+    /**
+     * 获得 url
+     *
+     */
+    public function testGetUrl()
+    {
+        (static::$drive->getUrl('demo.txt'));
     }
 }
