@@ -40,7 +40,7 @@ class FileFunction
      */
     public static function getTmpFile()
     {
-        $tmpfname       = tempnam("/tmp", "dir");
+        $tmpfname = @tempnam("/tmp", "dir");
         chmod($tmpfname, 0777);
         return $tmpfname;
     }
