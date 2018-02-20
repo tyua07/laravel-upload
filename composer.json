@@ -1,27 +1,42 @@
 {
-    "name": "yangyifan/upload",
-    "description": "上传 SDK for Laravel",
-    "keywords": ["upload", "tyua07","laravel", "sdk", "qiniu", "upyun", "oss"],
-    "require": {
-        "qiniu/php-sdk": "v7.0.*",
-        "aliyuncs/oss-sdk-php" : "*",
-        "league/flysystem": "^1.0",
-        "yangyifan/config-helper": "0.1",
-        "yangyifan/library-helper": "v0.1"
-    },
-    "autoload": {
-        "psr-4": {
-            "Yangyifan\\Upload\\": "src/"
-        }
-    },
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "yangyifan",
-            "email": "yangyifanphp@gmail.com"
-        }
-    ],
-    "require-dev": {
-        "phpunit/phpunit": "^5.7"
+  "name": "yangyifan/upload",
+  "description": "上传 SDK for Laravel",
+  "keywords": [
+    "upload",
+    "tyua07",
+    "laravel",
+    "sdk",
+    "qiniu",
+    "upyun",
+    "oss"
+  ],
+  "require": {
+    "qiniu/php-sdk": "v7.0.*",
+    "aliyuncs/oss-sdk-php": "*",
+    "league/flysystem": "^1.0",
+    "yangyifan/config-helper": "0.1",
+    "yangyifan/library-helper": "v0.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "Yangyifan\\Upload\\": "src/"
     }
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "yangyifan",
+      "email": "yangyifanphp@gmail.com"
+    }
+  ],
+  "require-dev": {
+    "phpunit/phpunit": "^5.7"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Yangyifan\\Upload\\UploadServiceProvider"
+      ]
+    }
+  }
 }
