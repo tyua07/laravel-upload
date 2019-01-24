@@ -450,6 +450,10 @@ class QiniuAdapter extends AbstractAdapter
      */
     public function getUrl($file, $expire_at = 3600)
     {
-        return $this->applyPathPrefix($file);
+        $url = $this->applyPathPrefix($file);
+        if(array_get($this->config,'visibility')=='private'){
+            $url = $this->auth->privateDownloadUrl($url,$expire_at);
+        }
+        return $url;
     }
 }
